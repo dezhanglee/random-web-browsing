@@ -64,13 +64,37 @@ def doRequest(url, debug = False):
         print("Bad reqeusts: %s" % badRequests)
     return r
 
+'''
+return domain name of a given url
+eg if url = https://ncl.sg/about/xx/yy
+getDomainName(url) returns ncl.sg
+'''
+def getDomainName(url):
+    parsed_uri = urlparse(url)
+    return parsed_uri.netloc
+
+
+'''
+gets protocol of a given url
+eg if url = https://ncl.sg/about/xx/yy
+getProtocol(url) returns https
+'''
+def getProtocol(url):
+    parsed_uri = urlparse(url)
+    return parsed_uri.scheme
+'''
+url is valid iff scheme is one of
+http/https/ftp
+'''
+def isValidWebsite(url):
+    return (getProtocol(url) in {'http', 'https', 'ftp'})
+    
 def getLinks(url):
 
     #get the domainName, protocol (http/https/ftp, etc.)
-    parsed_uri = urlparse(url)
-    domainName = parsed_uri.netloc
-    protocol = parsed_uri.scheme
-    result = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri)
+    domainName = getDomainName(url)
+    protocol = getProtocol(url)
+    result = '{}://{}/'.format(protocol, domainName)
 
     resp = urllib.request.urlopen(url)
     soup = BeautifulSoup(resp, \
@@ -106,12 +130,21 @@ def crawlRecursive(url, depthLeft, urlSet = set(), onlySameDomain = True, \
     if debug:
         print("depthLeft = {}".format(depthLeft))
     if (depthLeft == 0):
-        return  
-    links = getLinks(url)
+        return
+    try:
+        links = getLinks(url)
+    except Exception as e:
+        print("Error accessing %s" % url)
+        raise e
     if (not links):
         return
+    
+    #not a perfect method
+    #but P(a link has the exact domain name as a contiguous substr)
+    #is quite low...
     if (onlySameDomain):
-        links = [i for i in links if url in i]
+        domainName = getDomainName(url)
+        links = [i for i in links if domainName in i and isValidWebsite(i)]
     
     #make a copy of prior crawled sites
 	#and update the posterior crawled sites (this iteration)
