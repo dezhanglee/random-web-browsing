@@ -15,92 +15,98 @@ import os
 
 def randomBrowsing(url = "https://ncl.sg", timeAllowed = 1000, \
                 maxDepth = MAX_DEPTH, debug = False, sleep = True, \
-                noOfInstances = 1):
-    
-    
+                noOfInstances = 1, onlySameDomain = True):
+                
     linkStack = [url]
     
-    print("Starting URL = %s" % url);
-    page = doRequest(url)
+    currDepth = 0
     
-    if page:
-        links = getLinks(page)
-        linkCount = len(links)
-        
-        if not linkCount:
-            raise Exception("Base addr does not have any link")
-    else:
-        raise Exception("Error requesting %s" % inputUrl)
+    currTime = time.time()
+    endTime = currTime + timeAllowed
     
-    #if want a few accesses concurrently
     parentPid = os.getpid()
     
-    while(noOfInstances > 1 and os.getpid() == parentPid):
+    while (noOfInstances > 1 and os.getpid() == parentPid):
         os.fork()
-        noOfInstances -= 1
     
-    currDepth = 0
-   
-    currTime = time.time()
-    finishTime = currTime + timeAllowed
-    
-    #use PID as seed, shouldnt use time 
-    #since its possible some instances may start at the
-    #same time 
     random.seed(os.getpid())
     
-    #implement stack to make it easier to go back when hit dead link 
-    while (currDepth < MAX_DEPTH and time.time() < finishTime):
-
-        if (debug):
-            print(links)
-            
-            
-        linkCount = len(links)
+    currUrl = url
+    
+    while (currDepth < maxDepth and time.time() < endTime):
         
-        if (linkCount == 0):
-            # go back to prev page again
-            links = linkStack.pop()
-            continue
-        
-        randomLinkIdx = random.randrange(0, linkCount - 1)
-        
-        randomLink = links[randomLinkIdx]
-        
-        
-        try:
-            sub_page = doRequest(randomLink)
-            if (sub_page):
-                sub_page_links = getLinks(sub_page)
-                checkLinkCount = len(sub_page_links)
-            elif (not sub_page or checkLinkCount == 0):
-                #that link cannot access or no links to click
-                print("Following link cant be accessed or does not have any \
-                links to follow up with: %s " % links[randomLinkIdx])
-                del links[randomLinkIdx]
-                continue #restart without curr link
+        listOfPages = crawl(url = currUrl, maxDepth = 1, \
+                onlySameDomain = onlySameDomain, \
+                debug = debug)
+        print(listOfPages)
                 
-            links = sub_page_links
+        try: #check if listOfPages is non empty
+            randomIdx = random.randint(0, len(listOfPages) - 1)
+        except:
+            print("%s has no other URL to link to, trying the\
+                previous URL visited" % currUrl)
+            if (len(linkStack) > 0):
+                currUrl = linkStack.pop()
+            else:
+                currUrl = url #go back to the base
+                
+            continue
+                
+        randomUrl = listOfPages[randomIdx]
+        
+        currUrl = randomUrl
+        linkStack.append(currUrl)
+        
+        randomSleepTime = 0
+        if (sleep):
+            randomSleepTime = random.randint(MIN_SLEEP_TIME, MAX_SLEEP_TIME)
+            time.sleep(randomSleepTime)
+        
+        if (debug):
+            print("List of URLs")
+            print(listOfPages)
+            print("Currently at {}".format(randomUrl))
+            print("Slept for %d" % randomSleepTime)
+        currDepth += 1
 
-            currDepth += 1
-            print("Currently at: %s " % randomLink)
-            
-            #if can access the link, put it on stack 
-            linkStack.append(randomLink)
-            
-            #then sleep
-            sleepTime = random.randint(MIN_SLEEP_TIME, MAX_SLEEP_TIME)
-            time.sleep(sleepTime)
-            
-        except Exception as e:
-            raise e
-            
            
 
     
 if __name__ == "__main__":
     
-    randomBrowsing()
+    import argparse
+    
+    parser = argparse.ArgumentParser(description = \
+        "Arguments for program")
+    
+    parser.add_argument('url', type=str, \
+                    help='Target Website')
+                    
+    parser.add_argument('-t', type = int, \
+            help='Time given to crawl website (sec)', default = 1000)
+    
+    parser.add_argument('-d', type = int, \
+            help='How deep to crawl website from entrypoint', default = 3)
+            
+    parser.add_argument('-i', type = int, \
+            help='How many seperate instances to browse website \
+            (using forking)', default = 1)          
+
+    parser.add_argument('-s', type = int, \
+            help='Set to 0 to allow it to crawl to diff. domain',\
+            default = 1)            
+    
+    parser.add_argument('--debug', type = int, \
+            help='Set to 1 for debug output', default = 0)    
+
+    args = parser.parse_args()
+    
+        
+    randomBrowsing(url = args.url, \
+                timeAllowed = args.t, \
+                maxDepth = args.d, \
+                debug = args.debug, \
+                noOfInstances = args.i)
     
         
             
