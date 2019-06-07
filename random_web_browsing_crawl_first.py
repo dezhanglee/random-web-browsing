@@ -16,9 +16,18 @@ import os
 def crawlThenBrowse(url = "https://ncl.sg", timeAllowed = 1000, \
                 maxDepth = 10, onlySameDomain = True, debug = False, \
                 sleep = True, noOfInstances = 1):
-                
+    
+    linkStack = [url]
+        
     listOfPages = crawl(url, maxDepth, onlySameDomain, debug = debug)   
-    print(listOfPages)
+    
+    try:
+        listOfPages[0]
+    except:
+        raise Exception("Base URL has no other links!") 
+    
+    if debug:
+        print(listOfPages)
     
     currTime = time.time()
     endTime = currTime + timeAllowed
@@ -38,6 +47,7 @@ def crawlThenBrowse(url = "https://ncl.sg", timeAllowed = 1000, \
     #but both will have different PID, so ok
     random.seed(a = currPid)
     while(currTime < endTime):
+        
         
         randIdx = random.randint(0, nLink - 1)
         
