@@ -112,9 +112,11 @@ def crawlRecursive(url, depthLeft, urlSet = set(), onlySameDomain = True, \
         return
     if (onlySameDomain):
         links = [i for i in links if url in i]
-        
+    
+    #make a copy of prior crawled sites
+	#and update the posterior crawled sites (this iteration)
     priorUrlSet = urlSet.copy()
-    urlSet.update(links)
+    urlSet.update(links) 
     
     for i in links:
         if (i not in priorUrlSet): #avoid redundant crawling 
