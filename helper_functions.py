@@ -100,7 +100,7 @@ def getLinks(url):
 
 
 def crawlRecursive(url, depthLeft, urlSet = set(), onlySameDomain = True, \
-                    debug = 1):
+                    debug = False):
     
     
     if debug:
@@ -123,6 +123,6 @@ def crawlRecursive(url, depthLeft, urlSet = set(), onlySameDomain = True, \
     return list(urlSet)
         
     
-def crawl(url = "https://ncl.sg", maxDepth = 3, onlySameDomain = True):
+def crawl(url = "https://ncl.sg", maxDepth = 3, onlySameDomain = True, debug = False):
     urlSet = set()
-    return crawlRecursive(url, maxDepth, urlSet, onlySameDomain)
+    return crawlRecursive(url, maxDepth, urlSet, onlySameDomain, debug)
